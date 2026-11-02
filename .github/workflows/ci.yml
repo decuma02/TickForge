@@ -31,6 +31,7 @@ jobs:
       - name: Run Debug Build & Tests with ASan & UBSan
         run: |
           docker run --rm \
+            --user root \
             --cap-add=SYS_PTRACE \
             --security-opt seccomp=unconfined \
             -v ${{ github.workspace }}:/workspace \
@@ -51,6 +52,7 @@ jobs:
       - name: Run Release Build & Benchmarks
         run: |
           docker run --rm \
+            --user root \
             --cap-add=SYS_ADMIN \
             --cap-add=SYS_PTRACE \
             --security-opt seccomp=unconfined \

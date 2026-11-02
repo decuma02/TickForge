@@ -44,8 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set GCC-12 / G++-12 as default alternatives
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 \
     && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100 \
-    && update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 100 \
-    && update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++ 100
+    && update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-12 100 \
+    && update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-12 100
 
 # Fix potential perf version mismatch: Ubuntu wrapper requires specific linux-tools-$(uname -r).
 # Create a fallback wrapper to execute any available installed perf binary.
