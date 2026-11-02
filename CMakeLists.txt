@@ -24,16 +24,16 @@ endif()
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 # Global Warning Flags
-add_compile_options(
-    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(
         -Wall
         -Wextra
         -Wpedantic
         -Wshadow
         -Wnon-virtual-dtor
         -Wconversion
-    >
-)
+    )
+endif()
 
 # Release flags (optimized for profiling and benchmarking)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
