@@ -1,0 +1,73 @@
+name: C++17 CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  docker-build-and-test:
+    name: Build, Test (ASan/UBSan), and Benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Developer Container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          tags: tickforge-ci:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Debug Build & Tests with ASan & UBSan
+        run: |
+          docker run --rm \
+            --cap-add=SYS_PTRACE \
+            --security-opt seccomp=unconfined \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            tickforge-ci:latest bash -c "
+              set -e
+              echo '=== Building with ASan and UBSan (Debug) ==='
+              cmake -B build-debug -S . \
+                -DCMAKE_BUILD_TYPE=Debug \
+                -DBUILD_TESTING=ON \
+                -DBUILD_BENCHMARKS=OFF
+              cmake --build build-debug -j\$(nproc)
+              
+              echo '=== Running Google Tests under ASan/UBSan ==='
+              ctest --test-dir build-debug --output-on-failure --verbose
+            "
+
+      - name: Run Release Build & Benchmarks
+        run: |
+          docker run --rm \
+            --cap-add=SYS_ADMIN \
+            --cap-add=SYS_PTRACE \
+            --security-opt seccomp=unconfined \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            tickforge-ci:latest bash -c "
+              set -e
+              echo '=== Building Optimized Release Binary ==='
+              cmake -B build-release -S . \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_TESTING=ON \
+                -DBUILD_BENCHMARKS=ON
+              cmake --build build-release -j\$(nproc)
+
+              echo '=== Running Regression Unit Tests ==='
+              ctest --test-dir build-release --output-on-failure
+
+              echo '=== Running Google Benchmark Suite ==='
+              ./build-release/benchmarks/tickforge_benchmarks --benchmark_counters_tabular=true
+            "

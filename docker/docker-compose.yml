@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  cpp-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        USERNAME: developer
+        USER_UID: 1000
+        USER_GID: 1000
+    image: tickforge-dev:latest
+    container_name: tickforge_dev_container
+    working_dir: /workspace
+
+    # ---------------------------------------------------------------------------
+    # Diagnostics & Profiling Privileges:
+    # 1. SYS_PTRACE: Required for GDB to attach/trace processes and ASan leak sanitizer.
+    # 2. SYS_ADMIN: Required for older Linux kernels perf hardware event tracing.
+    # 3. PERFMON: Modern capability (Linux >= 5.8) specifically for perf subsystem.
+    # 4. seccomp=unconfined: Disables seccomp syscall filtering for ptrace/perf.
+    # ---------------------------------------------------------------------------
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+      - PERFMON
+    security_opt:
+      - seccomp:unconfined
+
+    # Bind mount the host codebase into the container
+    volumes:
+      - ..:/workspace:rw
+      # Optional: mount kernel debug fs for kernel-level perf analysis (if accessible on host)
+      - /sys/kernel/debug:/sys/kernel/debug:ro
+
+    # Keep container running for interactive development
+    stdin_open: true
+    tty: true
+
+    environment:
+      - CC=gcc
+      - CXX=g++
+      - ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1:check_initialization_order=1
+      - UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
