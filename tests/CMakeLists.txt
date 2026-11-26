@@ -6,6 +6,7 @@ include(GoogleTest)
 # Unit Test Binary
 add_executable(unit_tests
     unit/test_engine.cpp
+    unit/test_domain_phase1a.cpp
 )
 
 target_link_libraries(unit_tests
