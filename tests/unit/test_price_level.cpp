@@ -39,7 +39,6 @@ TEST_F(PriceLevelTest, AppendSingleOrder) {
     EXPECT_EQ(level.back().id(), OrderId(1));
     EXPECT_TRUE(level.check_invariants());
 }
-
 TEST_F(PriceLevelTest, RejectMismatchedPriceOrInactiveOrder) {
     PriceLevel level(price);
 
@@ -96,7 +95,6 @@ TEST_F(PriceLevelTest, EraseFrontOrder) {
     EXPECT_EQ(level.front().id(), OrderId(2));
     EXPECT_TRUE(level.check_invariants());
 }
-
 TEST_F(PriceLevelTest, EraseMiddleOrder) {
     PriceLevel level(price);
     level.append(Order(OrderId(1), Side::Buy, price, Quantity(10), 100));
@@ -110,7 +108,6 @@ TEST_F(PriceLevelTest, EraseMiddleOrder) {
     EXPECT_EQ(level.back().id(), OrderId(3));
     EXPECT_TRUE(level.check_invariants());
 }
-
 TEST_F(PriceLevelTest, EraseLastOrderAndEmptyLevel) {
     PriceLevel level(price);
     auto it1 = level.append(Order(OrderId(1), Side::Buy, price, Quantity(10), 100));
@@ -121,7 +118,6 @@ TEST_F(PriceLevelTest, EraseLastOrderAndEmptyLevel) {
     EXPECT_EQ(level.total_quantity(), Quantity::zero());
     EXPECT_TRUE(level.check_invariants());
 }
-
 TEST_F(PriceLevelTest, UpdateOrderRemainingQuantity) {
     PriceLevel level(price);
     auto it = level.append(Order(OrderId(1), Side::Buy, price, Quantity(10), 100));
@@ -143,5 +139,35 @@ TEST_F(PriceLevelTest, UpdateOrderRemainingQuantity) {
 
     EXPECT_EQ(it->remaining_quantity(), Quantity(2));
     EXPECT_EQ(level.total_quantity(), Quantity(17));
+    EXPECT_TRUE(level.check_invariants());
+}
+TEST_F(PriceLevelTest, AppendQuantityOverflowThrowsAndPreservesState) {
+    PriceLevel level(price);
+    constexpr uint32_t half_max = 1u << 31; // 2^31
+
+    Order ord1(OrderId(1), Side::Buy, price, Quantity(half_max), 100);
+    level.append(ord1);
+
+    EXPECT_EQ(level.order_count(), 1);
+    EXPECT_EQ(level.total_quantity(), Quantity(half_max));
+    EXPECT_EQ(level.front().id(), OrderId(1));
+    EXPECT_TRUE(level.check_invariants());
+
+    Order ord2(OrderId(2), Side::Buy, price, Quantity(half_max), 101);
+    EXPECT_THROW(level.append(ord2), std::overflow_error);
+
+    // Verify PriceLevel remains unchanged after the failed operation
+    EXPECT_EQ(level.order_count(), 1);
+    EXPECT_EQ(level.total_quantity(), Quantity(half_max));
+    EXPECT_EQ(level.front().id(), OrderId(1));
+    EXPECT_EQ(level.back().id(), OrderId(1));
+
+    std::vector<OrderId> ids;
+    for (const auto& ord : level) {
+        ids.push_back(ord.id());
+    }
+    ASSERT_EQ(ids.size(), 1);
+    EXPECT_EQ(ids[0], OrderId(1));
+
     EXPECT_TRUE(level.check_invariants());
 }
