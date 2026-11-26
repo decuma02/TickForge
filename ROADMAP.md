@@ -16,24 +16,24 @@ This roadmap defines the structured, iterative milestones for engineering the TI
 
 ## Phase 1: Core Domain, Limit Order Book, and Continuous Matching
 
-### Phase 1A: Core Domain Value Types & Instrument Model (Current Milestone)
-- [ ] Implement `PriceInTicks` (integer-tick wrapper with overflow-safe arithmetic and explicit conversions).
-- [ ] Implement `Quantity` (`uint32_t` whole-contract lot representation).
-- [ ] Implement `OrderId` (strongly typed 64-bit identifier).
-- [ ] Implement `Side` (`Buy`, `Sell`).
-- [ ] Implement `ProductSpecification` (tick size, contract multiplier, commodity code, min/max trade volume).
-- [ ] Implement `ContractInstance` (individual traded contract, maturity date, trading status).
-- [ ] Implement `Order` (stateful entity tracking initial, working, executed, reduced, and cancelled quantities).
-- [ ] Focused unit tests verifying validation, failure behavior, and no silent clamping.
+### Phase 1A: Core Domain Value Types & Instrument Model (Completed)
+- [x] Implement `PriceInTicks` (integer-tick wrapper with overflow-safe arithmetic and explicit conversions).
+- [x] Implement `Quantity` (`uint32_t` whole-contract lot representation).
+- [x] Implement `OrderId` (strongly typed 64-bit identifier).
+- [x] Implement `Side` (`Buy`, `Sell`).
+- [x] Implement `ProductSpecification` (tick size, contract multiplier, commodity code, min/max trade volume).
+- [x] Implement `ContractInstance` (individual traded contract, maturity date, trading status).
+- [x] Implement `Order` (stateful entity tracking initial, working, executed, reduced, and cancelled quantities).
+- [x] Focused unit tests verifying validation, failure behavior, and no silent clamping.
 
-### Phase 1B: Price Levels & Order Storage Data Structures
-- [ ] Implement `PriceLevel` containing FIFO queue (`std::list<Order>`).
-- [ ] Implement `OrderLocator` pointing to price level and list iterator.
-- [ ] Fast $O(1)$ order lookup table via `std::unordered_map<OrderId, OrderLocator>`.
-- [ ] Implement `BookSide<Compare>` using `std::map<PriceInTicks, PriceLevel, Compare>`:
+### Phase 1B: Price Levels & Order Storage Data Structures (Completed)
+- [x] Implement `PriceLevel` containing FIFO queue (`std::list<Order>`).
+- [x] Implement `OrderLocator` pointing to price level and list iterator.
+- [x] Fast $O(1)$ order lookup table via `std::unordered_map<OrderId, OrderLocator>`.
+- [x] Implement `BookSide<Compare>` using `std::map<PriceInTicks, PriceLevel, Compare>`:
   - Bids: `std::map<PriceInTicks, PriceLevel, std::greater<PriceInTicks>>` (descending).
   - Asks: `std::map<PriceInTicks, PriceLevel, std::less<PriceInTicks>>` (ascending).
-- [ ] Level 3 order book invariant validation (`no_cross`, quantity conservation).
+- [x] Level 3 order book invariant validation (`no_cross`, quantity conservation).
 
 ### Phase 1C: Order Book Operations & Modify Semantics
 - [ ] Placement of resting limit orders.
