@@ -7,6 +7,7 @@ include(GoogleTest)
 add_executable(unit_tests
     unit/test_engine.cpp
     unit/test_domain_phase1a.cpp
+    unit/test_price_level.cpp
 )
 
 target_link_libraries(unit_tests
