@@ -8,6 +8,7 @@ add_executable(unit_tests
     unit/test_engine.cpp
     unit/test_domain_phase1a.cpp
     unit/test_price_level.cpp
+    unit/test_order_book.cpp
 )
 
 target_link_libraries(unit_tests
