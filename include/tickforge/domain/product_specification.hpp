@@ -19,7 +19,7 @@ public:
         uint32_t tick_size_e4,         // Tick size scaled by 10^4 (e.g., 2500 for 0.25)
         uint32_t contract_multiplier,  // Dollar multiplier per full index point (e.g., 50 for $50/point)
         Quantity min_trade_vol,        // Minimum order size (CME Tag 562 = 1)
-        Quantity max_trade_vol         // Maximum order size (CME Tag 1140 = 2,999 for ES outrights)
+        Quantity max_trade_vol         // Maximum order size (Tag 1140: MaxTradeVol, provisional 2,999 for ES outrights)
     )
         : commodity_code_(std::move(commodity_code))
         , name_(std::move(name))
@@ -48,18 +48,23 @@ public:
     /// Factory for CME Globex E-mini S&P 500 (ES) Outright Futures specification.
     /// - Commodity Code: "ES"
     /// - Name: "E-mini S&P 500 Index Futures"
+    /// - CME Rulebook references:
+    ///     * Rule 35801: Contract specifications and $50.00 multiplier.
+    ///     * Rule 35802.B: Trading unit ($50 × S&P 500 Stock Price Index).
+    ///     * Rule 35802.C: Minimum price increment (0.25 index points = $12.50 per contract).
     /// - Tick size: 0.25 index points (2500 with e4 scale)
     /// - Contract multiplier: $50 per index point ($12.50 per tick)
-    /// - Min trade volume: 1 contract (Tag 562)
-    /// - Max trade volume: 2,999 contracts (Tag 1140 baseline)
-    [[nodiscard]] static ProductSpecification cme_es_outright() {
+    /// - Min trade volume: 1 contract (CME Tag 562 MinTradeVol)
+    /// - Max trade volume: Provisional 2,999 contracts (Tag 1140 MaxTradeVol; represents maximum order quantity,
+    ///   retained as a provisional simulator configuration pending empirical CME MDP 3.0 Security Definition capture).
+    [[nodiscard]] static ProductSpecification cme_es_outright(Quantity max_vol = Quantity(2'999)) {
         return ProductSpecification(
             "ES",
             "E-mini S&P 500 Index Futures",
             2'500,
             50,
             Quantity(1),
-            Quantity(2'999)
+            max_vol
         );
     }
 
@@ -75,9 +80,20 @@ public:
         return qty >= min_trade_vol_ && qty <= max_trade_vol_;
     }
 
+    /// Validate whether a price is valid for this product (e.g. ES futures require strictly positive price > 0).
+    [[nodiscard]] bool validate_price(PriceInTicks price) const noexcept {
+        return price.ticks() > 0;
+    }
+
     /// Convert a decimal index price into PriceInTicks using this product's tick size.
     [[nodiscard]] PriceInTicks to_price_in_ticks(int64_t whole_points, uint32_t fractional_points_e4) const {
         return PriceInTicks::from_index_points(whole_points, fractional_points_e4, tick_size_e4_);
+    }
+
+    /// Convert floating-point price into PriceInTicks using this product's tick size.
+    [[nodiscard]] PriceInTicks to_price_in_ticks(double price_points) const {
+        double tick_size = static_cast<double>(tick_size_e4_) / 10'000.0;
+        return PriceInTicks::from_double(price_points, tick_size);
     }
 
 private:
