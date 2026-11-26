@@ -3,6 +3,7 @@
 # ==============================================================================
 add_executable(tickforge_benchmarks
     bench_engine.cpp
+    bench_order_book.cpp
 )
 
 target_link_libraries(tickforge_benchmarks
