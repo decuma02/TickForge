@@ -259,3 +259,44 @@ TEST_F(OrderBookTest, HighVolumeInsertionsAndRemovalsConsistency) {
     EXPECT_EQ(book.total_level_count(), 0);
     EXPECT_TRUE(book.check_invariants());
 }
+
+TEST_F(OrderBookTest, ExplicitRvalueOrderInsertion) {
+    OrderBook book = create_book();
+    PriceInTicks price(20000);
+    Quantity qty(25);
+    OrderId id(777);
+    uint64_t seq = 42;
+
+    Order order(id, Side::Buy, price, qty, seq);
+
+    // Explicitly pass named Order object with std::move
+    bool inserted = book.insert_order(std::move(order));
+    EXPECT_TRUE(inserted);
+
+    // Verify order is retrievable by its ID
+    const Order* stored = book.find_order(id);
+    ASSERT_NE(stored, nullptr);
+
+    // Verify stored order has expected side, price, ID and remaining quantity
+    EXPECT_EQ(stored->id(), id);
+    EXPECT_EQ(stored->side(), Side::Buy);
+    EXPECT_EQ(stored->price(), price);
+    EXPECT_EQ(stored->remaining_quantity(), qty);
+    EXPECT_EQ(stored->priority_sequence(), seq);
+
+    // Verify correct price level and aggregate quantity are updated
+    const PriceLevel* level = book.find_level(Side::Buy, price);
+    ASSERT_NE(level, nullptr);
+    EXPECT_EQ(level->price(), price);
+    EXPECT_EQ(level->order_count(), 1);
+    EXPECT_EQ(level->total_quantity(), qty);
+    EXPECT_EQ(level->front().id(), id);
+
+    EXPECT_EQ(book.order_count(), 1);
+    EXPECT_EQ(book.level_count(Side::Buy), 1);
+    ASSERT_TRUE(book.best_bid_price().has_value());
+    EXPECT_EQ(book.best_bid_price().value(), price);
+
+    // Verify OrderBook invariants remain valid
+    EXPECT_TRUE(book.check_invariants());
+}
